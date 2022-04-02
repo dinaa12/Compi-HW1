@@ -32,7 +32,10 @@
     ID = 27,
     NUM = 28,
     STRING = 29,
-	AUTO=30
+	AUTO = 30,
+	ILLEGAL_CHAR = 31,
+	ILLEGAL_ESCAPE = 32,
+	UNCLOSED_STR = 33,
   };
   extern int yylineno;
   extern char* yytext;
