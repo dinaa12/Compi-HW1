@@ -1,9 +1,11 @@
 #include "tokens.hpp"
 #include <iostream>
+#include <cstdint>
+#include <cstring>
 
-void print_output(int line, string token, char* text)
+void print_output(int line, std::string token, char* text)
 {
-    std::cout << line << " " << token << " " << " " << text << std::endl;
+    std::cout << line << " " << token << " " << text << std::endl;
 }
 
 int main()
@@ -88,7 +90,8 @@ int main()
                 print_output(yylineno, "BINOP", yytext);
                 break;
             case COMMENT:
-                print_output(yylineno, "COMMENT", yytext);
+                std::cout << yylineno << " COMMENT " << "//" << std::endl;
+                //print_output(yylineno, "COMMENT", yytext);
                 break;
             case ID:
                 print_output(yylineno, "ID", yytext);
@@ -97,22 +100,25 @@ int main()
                 print_output(yylineno, "NUM", yytext);
                 break;
             case STRING: // !!!
-                print_output(yylineno, "STRING", yytext);
+                print_output(yylineno, "STRING", quotation_string);
                 break;
             case AUTO:
                 print_output(yylineno, "AUTO", yytext);
                 break;
             case ILLEGAL_CHAR:
-                print_output(yylineno, "ILLEGAL_CHAR", "Error " + yytext);
+                std::cout << yylineno << " ILLEGAL_CHAR " << "Error " << yytext << std::endl;
+                //print_output(yylineno, "ILLEGAL_CHAR", "Error " + yytext);
                 break;
-            case ILLEGAL_ESCAPE:
-                char out[yyleng-1+1];
-                memcpy(out, &yytext[1], yyleng-1);
-                out[yyleng-1] = '\0';
+            case ILLEGAL_ESCAPE: {
+                char out[yyleng - 1 + 1];
+                std::memcpy(out, &yytext[1], yyleng - 1);
+                out[yyleng - 1] = '\0';
                 print_output(yylineno, "ILLEGAL_ESCAPE", yytext);
                 break;
+            }
             case UNCLOSED_STR:
-                print_output(yylineno, "UNCLOSED_STR", "Error unclosed string");
+                std::cout << yylineno << " UNCLOSED_STR " << "Error unclosed string" << std::endl;
+                //print_output(yylineno, "UNCLOSED_STR", "Error unclosed string");
                 break;
             default:
                 break;

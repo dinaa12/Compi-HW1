@@ -41,4 +41,5 @@
   extern char* yytext;
   extern int yyleng;
   extern int yylex();
+  extern char quotation_string[1024];
 #endif /* TOKENS_HPP_ */
