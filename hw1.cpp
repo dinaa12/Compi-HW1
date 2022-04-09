@@ -91,7 +91,6 @@ int main()
                 break;
             case COMMENT:
                 std::cout << yylineno << " COMMENT " << "//" << std::endl;
-                //print_output(yylineno, "COMMENT", yytext);
                 break;
             case ID:
                 print_output(yylineno, "ID", yytext);
@@ -99,27 +98,31 @@ int main()
             case NUM:
                 print_output(yylineno, "NUM", yytext);
                 break;
-            case STRING: // !!!
+            case STRING:
                 print_output(yylineno, "STRING", quotation_string);
                 break;
             case AUTO:
                 print_output(yylineno, "AUTO", yytext);
                 break;
             case ILLEGAL_CHAR:
-                std::cout << yylineno << " ILLEGAL_CHAR " << "Error " << yytext << std::endl;
-                //print_output(yylineno, "ILLEGAL_CHAR", "Error " + yytext);
-                break;
-            case ILLEGAL_ESCAPE: {
-                char out[yyleng - 1 + 1];
-                std::memcpy(out, &yytext[1], yyleng - 1);
-                out[yyleng - 1] = '\0';
-                print_output(yylineno, "ILLEGAL_ESCAPE", yytext);
-                break;
-            }
+                std::cout << "Error " << yytext << std::endl;
+                exit(0);
+                //break;
+            case ILLEGAL_ESCAPE:
+                std::cout << "Error undefined escape sequence " << yytext[yyleng-1] << std::endl;
+                exit(0);
+                //break;
             case UNCLOSED_STR:
-                std::cout << yylineno << " UNCLOSED_STR " << "Error unclosed string" << std::endl;
-                //print_output(yylineno, "UNCLOSED_STR", "Error unclosed string");
-                break;
+                std::cout << "Error unclosed string" << std::endl;
+                exit(0);
+                //break;
+            case ILLEGAL_ESCAPE_HEX:
+                if (yytext[yyleng-3] == 'x')
+                    std::cout << "Error undefined escape sequence " << yytext[yyleng-3] << yytext[yyleng-2] << yytext[yyleng-1] << std::endl;
+                else
+                    std::cout << "Error undefined escape sequence " << yytext[yyleng-2] << yytext[yyleng-1] << std::endl;
+                exit(0);
+                //break;
             default:
                 break;
         }

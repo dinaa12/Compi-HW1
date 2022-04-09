@@ -14,67 +14,78 @@ void string_escape();
 
 %option yylineno
 %option noyywrap
-digit   		([1-9])
-digit0			([0-9])
-letter  		([a-zA-Z])
-whitespace		([\t\n\r ])
-printable		([ -~])|whitespace
-printable_no_slash_no_quote	([ -!])|(#-\[])|([\]-~])|whitespace
-escapeseq		((\\|\0|\t|\n|\r)|((\x)(digit)(digit)))
-binop			(\+|\-|\*|\/)
-relop			([(==)(!=)(<=)(>=)(<)(>)])
+digit   											([1-9])
+digit0												([0-9])
+letter  											([a-zA-Z])
+whitespace											([\t\n\r ])
+printable											([ -~])|whitespace
+printable_no_slash_no_quote							([ -!])|([#-\[])|([\]-~])|whitespace
+escapeseq											((\\|\0|\t|\n|\r)|((\x)(digit)(digit)))
+binop												(\+|\-|\*|\/)
+relop												([(==)(!=)(<=)(>=)(<)(>)])
 
-%x QUOTATION 
+%x QUOTATION
+%x QUOTATION_SLASH
 %x BYTE_LITERAL
 
 %%
 
-void							return VOID;
-int								return INT;
-byte							return BYTE;
-bool							return BOOL;
-auto							return AUTO;
+void												return VOID;
+int													return INT;
+byte												return BYTE;
+bool												return BOOL;
+auto												return AUTO;
 
-and								return AND;
-or								return OR;
-not								return NOT;
-true							return TRUE;
-false							return FALSE;
+and													return AND;
+or													return OR;
+not													return NOT;
+true												return TRUE;
+false												return FALSE;
 
-return							return RETURN;
-if								return IF;
-else							return ELSE;
-while							return WHILE;
-break							return BREAK;
-continue						return CONTINUE;
+return												return RETURN;
+if													return IF;
+else												return ELSE;
+while												return WHILE;
+break												return BREAK;
+continue											return CONTINUE;
 
-;								return SC;
-,								return COMMA;
-\(								return LPAREN;
-\)								return RPAREN;
-\{								return LBRACE;
-\}								return RBRACE;
-=								return ASSIGN;
+;													return SC;
+,													return COMMA;
+\(													return LPAREN;
+\)													return RPAREN;
+\{													return LBRACE;
+\}													return RBRACE;
+=													return ASSIGN;
 
-{relop}							return RELOP;
-{binop}							return BINOP;
+{relop}												return RELOP;
+{binop}												return BINOP;
 
-b								if (flag_b == true) flag_b = false; return BYTE; // piazza ???
-{letter}({letter}*{digit0}*)*	return ID;
+b													if (flag_b == true) flag_b = false; return BYTE; // piazza ???
+{letter}({letter}*{digit0}*)*						return ID;
 
-(0)|({digit}{digit0}*)/b		flag_b = true; return NUM;
-(0)|({digit}{digit0}*)          return NUM;
+(0)|({digit}{digit0}*)/b							flag_b = true; return NUM;
+(0)|({digit}{digit0}*)          					return NUM;
 
-(\/\/)(.)*(\n)$						return COMMENT;
+(\/\/)												return COMMENT;
+((\/)(\/)((.)*)((\n)$))										return COMMENT;
 
-\"\n\"|\"\r\"						return ILLEGAL_CHAR;	//???
-\"								BEGIN(QUOTATION); start_string();
-<QUOTATION>({printable_no_slash_no_quote}) append_to_string();
-<QUOTATION>(\")					BEGIN(INITIAL); close_string(); return STRING;
+(\"\n\"|\"\r\")										return ILLEGAL_CHAR;	//???
+(\")												BEGIN(QUOTATION); start_string();
+<QUOTATION>(\n)$									return UNCLOSED_STR;
+<QUOTATION>((\\)(\n))$								return UNCLOSED_STR;
+<QUOTATION>({printable_no_slash_no_quote}) 			append_to_string();
+<QUOTATION>(\\)										BEGIN(QUOTATION_SLASH);
+<QUOTATION>(\")										BEGIN(INITIAL); close_string(); return STRING;
 
-{whitespace}					;
-((\\)((.)*))						return ILLEGAL_ESCAPE;
-.								return ILLEGAL_CHAR;
+<QUOTATION_SLASH>([0tnr])						string_escape(); BEGIN(QUOTATION);
+<QUOTATION_SLASH>((\\)|(\"))						append_to_string(); BEGIN(QUOTATION);
+<QUOTATION_SLASH>((x)([0-7])(([0-9]|[A-Fa-f])))	string_escape(); BEGIN(QUOTATION);
+<QUOTATION_SLASH>((x)([0-9]|[A-Za-z])(([0-9]|[A-Za-z])?))			return ILLEGAL_ESCAPE_HEX;
+<QUOTATION_SLASH>(.) 								return ILLEGAL_ESCAPE;
+
+{whitespace}										;
+((\\)((.)*))										return ILLEGAL_ESCAPE;
+.													return ILLEGAL_CHAR;
 
 %%
 
@@ -92,29 +103,32 @@ void close_string() {
 }
 
 void string_escape() {
-	int curr_size = yyleng;
-	switch (yytext[curr_size-1]) {
+	switch (yytext[yyleng-1]) {
 		case 'n':
-			yytext[curr_size-2] = '\n';
-			yytext[curr_size-1] = '\0';
-			yyleng = yyleng-1;
+			quotation_string[quotation_string_size] = '\n';
+			break;
+		case 't':
+			quotation_string[quotation_string_size] = '\t';
+			break;
+		case 'r':
+			quotation_string[quotation_string_size] = '\r';
+			break;
+		case '0':
+			quotation_string[quotation_string_size] = '\0'; // ???
 			break;
 		default:
+			char c[2];
+			c[0] = yytext[yyleng-2];
+			c[1] = yytext[yyleng-1];
+			char output = (int)(strtol(c, NULL, 16));
+			quotation_string[quotation_string_size] = output;
 			break;
 	}
+	quotation_string_size++;
 }
 
 
 
 
 
-//(.)*([\r\n]+)					return ILLEGAL_CHAR; //????
-//(.)*(\n)$						return COMMENT;
 
-
-<QUOTATION>(\n)$				return UNCLOSED_STR;
-<QUOTATION>((\\)(\n))$				return UNCLOSED_STR;
-<QUOTATION>({printable_no_slash_no_quote}*|{escapeseq})			return STRING;
-<QUOTATION>((\\)((.)*))				return ILLEGAL_ESCAPE;
-
-<QUOTATION>({escapeseq})			string_escape();

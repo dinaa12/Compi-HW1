@@ -36,6 +36,7 @@
 	ILLEGAL_CHAR = 31,
 	ILLEGAL_ESCAPE = 32,
 	UNCLOSED_STR = 33,
+	ILLEGAL_ESCAPE_HEX = 34,
   };
   extern int yylineno;
   extern char* yytext;
