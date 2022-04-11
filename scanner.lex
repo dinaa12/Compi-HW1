@@ -10,6 +10,7 @@ void append_to_string();
 void close_string();
 void start_string();
 void string_escape();
+void string_hex();
 %}
 
 %option yylineno
@@ -19,10 +20,11 @@ digit0												([0-9])
 letter  											([a-zA-Z])
 whitespace											([\t\n\r ])
 printable											([ -~])|whitespace
-printable_no_slash_no_quote							([ -!])|([#-\[])|([\]-~])|whitespace
+printable_no_slash_no_quote							(([ -!])|([#-\[])|([\]-~]))
 escapeseq											((\\|\0|\t|\n|\r)|((\x)(digit)(digit)))
 binop												(\+|\-|\*|\/)
-relop												([(==)(!=)(<=)(>=)(<)(>)])
+relop												(==|!=|<=|>=|<|>)
+ascii												([\x00-\x21\x23-\x7F])
 
 %x QUOTATION
 %x QUOTATION_SLASH
@@ -60,28 +62,29 @@ continue											return CONTINUE;
 {relop}												return RELOP;
 {binop}												return BINOP;
 
-b													if (flag_b == true) flag_b = false; return BYTE; // piazza ???
+b													if (flag_b == true) flag_b = false; return B; // piazza ???
 {letter}({letter}*{digit0}*)*						return ID;
 
 (0)|({digit}{digit0}*)/b							flag_b = true; return NUM;
 (0)|({digit}{digit0}*)          					return NUM;
 
 (\/\/)												return COMMENT;
-((\/)(\/)((.)*))/((\n))										return COMMENT;
+((\/)(\/)((.)*))/((\n))								return COMMENT;
 
 (\"\n\"|\"\r\")										return ILLEGAL_CHAR;	//???
 (\")												BEGIN(QUOTATION); start_string();
-<QUOTATION>(\n)$									return UNCLOSED_STR;
+<QUOTATION>(\n)										return UNCLOSED_STR; 
 <QUOTATION><<EOF>>									return UNCLOSED_STR;
-<QUOTATION>((\\)(\n))$								return UNCLOSED_STR;
 <QUOTATION>({printable_no_slash_no_quote}) 			append_to_string();
 <QUOTATION>(\\)										BEGIN(QUOTATION_SLASH);
 <QUOTATION>(\")										BEGIN(INITIAL); close_string(); return STRING;
 
-<QUOTATION_SLASH>([0tnr])						string_escape(); BEGIN(QUOTATION);
+<QUOTATION_SLASH>([0tnr])							string_escape(); BEGIN(QUOTATION); 
 <QUOTATION_SLASH>((\\)|(\"))						append_to_string(); BEGIN(QUOTATION);
-<QUOTATION_SLASH>((x)([0-7])(([0-9]|[A-Fa-f])))	string_escape(); BEGIN(QUOTATION);
-<QUOTATION_SLASH>((x)([0-9]|[A-Za-z])(([0-9]|[A-Za-z])?))			return ILLEGAL_ESCAPE_HEX;
+<QUOTATION_SLASH>((x)([0-7])(([0-9]|[A-Fa-f])))		string_hex(); BEGIN(QUOTATION);
+<QUOTATION_SLASH>((x)({ascii})(({ascii})?))			return ILLEGAL_ESCAPE_HEX;
+<QUOTATION_SLASH>(\n)								return UNCLOSED_STR; 
+<QUOTATION_SLASH><<EOF>>							return UNCLOSED_STR;
 <QUOTATION_SLASH>(.) 								return ILLEGAL_ESCAPE;
 
 {whitespace}										;
@@ -118,16 +121,39 @@ void string_escape() {
 			quotation_string[quotation_string_size] = '\0'; // ???
 			break;
 		default:
-			char c[2];
-			c[0] = yytext[yyleng-2];
-			c[1] = yytext[yyleng-1];
-			char output = (int)(strtol(c, NULL, 16));
-			quotation_string[quotation_string_size] = output;
-			break;
+			printf("ERROR");
 	}
 	quotation_string_size++;
 }
 
+void string_hex() {
+	char hex[2] = {0,0};
+	hex[0] = yytext[yyleng-2];
+	hex[1] = yytext[yyleng-1];
+	int decimal = 0, base = 1;
+	
+	for(int i = 1; i >= 0; i--)
+	{
+		if(hex[i] >= '0' && hex[i] <= '9')
+		{
+			decimal += (hex[i] - 48) * base;
+			base *= 16;
+		}
+		else if(hex[i] >= 'A' && hex[i] <= 'F')
+		{
+			decimal += (hex[i] - 55) * base;
+			base *= 16;
+		}
+		else if(hex[i] >= 'a' && hex[i] <= 'f')
+		{
+			decimal += (hex[i] - 87) * base;
+			base *= 16;
+		}
+	}
+	
+	quotation_string[quotation_string_size] = decimal;
+	quotation_string_size++;
+}
 
 
 
