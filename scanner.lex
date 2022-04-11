@@ -67,11 +67,12 @@ b													if (flag_b == true) flag_b = false; return BYTE; // piazza ???
 (0)|({digit}{digit0}*)          					return NUM;
 
 (\/\/)												return COMMENT;
-((\/)(\/)((.)*)((\n)$))										return COMMENT;
+((\/)(\/)((.)*))/((\n))										return COMMENT;
 
 (\"\n\"|\"\r\")										return ILLEGAL_CHAR;	//???
 (\")												BEGIN(QUOTATION); start_string();
 <QUOTATION>(\n)$									return UNCLOSED_STR;
+<QUOTATION><<EOF>>									return UNCLOSED_STR;
 <QUOTATION>((\\)(\n))$								return UNCLOSED_STR;
 <QUOTATION>({printable_no_slash_no_quote}) 			append_to_string();
 <QUOTATION>(\\)										BEGIN(QUOTATION_SLASH);
