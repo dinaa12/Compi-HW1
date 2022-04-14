@@ -62,18 +62,19 @@ continue											return CONTINUE;
 {relop}												return RELOP;
 {binop}												return BINOP;
 
-b													if (flag_b == true) flag_b = false; return B; // piazza ???
-{letter}({letter}*{digit0}*)*						return ID;
+b													if (flag_b == true) { flag_b = false; return B;} else return ID;// piazza ???
+{letter}({letter}|{digit0})*						return ID;
 
-(0)|({digit}{digit0}*)/b							flag_b = true; return NUM;
+((0)|({digit}{digit0}*))/b							flag_b = true; return NUM;
 (0)|({digit}{digit0}*)          					return NUM;
+(0){digit0}+										return ILLEGAL_CHAR;
 
 (\/\/)												return COMMENT;
 ((\/)(\/)((.)*))/((\n))								return COMMENT;
 
-(\"\n\"|\"\r\")										return ILLEGAL_CHAR;	//???
+(\"(\\)n\"|\"(\\)r\")								return ILLEGAL_CHAR;	//???
 (\")												BEGIN(QUOTATION); start_string();
-<QUOTATION>(\n)										return UNCLOSED_STR; 
+<QUOTATION>(\n|\r|\r\n)								return UNCLOSED_STR; 
 <QUOTATION><<EOF>>									return UNCLOSED_STR;
 <QUOTATION>({printable_no_slash_no_quote}) 			append_to_string();
 <QUOTATION>(\\)										BEGIN(QUOTATION_SLASH);
@@ -118,7 +119,7 @@ void string_escape() {
 			quotation_string[quotation_string_size] = '\r';
 			break;
 		case '0':
-			quotation_string[quotation_string_size] = '\0'; // ???
+			quotation_string[quotation_string_size] = '\0';
 			break;
 		default:
 			printf("ERROR");
@@ -154,8 +155,3 @@ void string_hex() {
 	quotation_string[quotation_string_size] = decimal;
 	quotation_string_size++;
 }
-
-
-
-
-

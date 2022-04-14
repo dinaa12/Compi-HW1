@@ -3,17 +3,14 @@
 #include <cstdint>
 #include <cstring>
 
-void print_output(int line, std::string token, char* text)
-{
+void print_output(int line, std::string token, char* text){
     std::cout << line << " " << token << " " << text << std::endl;
 }
 
-int main()
-{
-	int token;
-	while ((token = yylex())) {
-        switch (token)
-        {
+int main(){
+    int token;
+    while ((token = yylex())) {
+        switch (token){
             case VOID:
                 print_output(yylineno, "VOID", yytext);
                 break;
@@ -105,7 +102,7 @@ int main()
                 print_output(yylineno, "AUTO", yytext);
                 break;
             case ILLEGAL_CHAR:
-                std::cout << "Error " << yytext << std::endl;
+                std::cout << "Error " << yytext[0] << std::endl;
                 exit(0);
                 //break;
             case ILLEGAL_ESCAPE:
@@ -126,6 +123,6 @@ int main()
             default:
                 break;
         }
-	}
-	return 0;
+    }
+    return 0;
 }
